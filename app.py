@@ -8,8 +8,8 @@ app = Flask(__name__)
 
 # Load model and scaler (adjust file paths as needed)
 # Make sure these .pkl files are in the same folder or give full path
-model = joblib.load("model.pkl")
-scaler = joblib.load("scaler.pkl")
+model = joblib.load("logistic_regression_model.joblib")
+scaler = joblib.load("standard_scaler.joblib")
 
 # Define the feature columns in the same order as during training
 FEATURE_COLUMNS = [
