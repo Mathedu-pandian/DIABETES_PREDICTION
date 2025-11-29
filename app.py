@@ -6,8 +6,8 @@ import os
 app = Flask(__name__)
 
 # Load model & scaler - MAKE SURE THESE FILES ARE IN GITHUB
-model = joblib.load("model.joblib")
-scaler = joblib.load("scaler.joblib")
+model = joblib.load("logistic_regression_model.joblib")
+scaler = joblib.load("standard_scaler.joblib")
 
 FEATURE_COLUMNS = [
     "Pregnancies", "Glucose", "BloodPressure", "SkinThickness",
