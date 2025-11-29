@@ -1,47 +1,68 @@
-from flask import request, jsonify, flask
+from flask import Flask, request, jsonify
 import pandas as pd
 import joblib
+import os
 
-flask = (__name__)
+# Create Flask app
+app = Flask(__name__)
 
-@app.route('/predict', methods=['POST'])
+# Load model and scaler (adjust file paths as needed)
+# Make sure these .pkl files are in the same folder or give full path
+model = joblib.load("model.pkl")
+scaler = joblib.load("scaler.pkl")
+
+# Define the feature columns in the same order as during training
+FEATURE_COLUMNS = [
+    'Pregnancies', 
+    'Glucose', 
+    'BloodPressure', 
+    'SkinThickness', 
+    'Insulin', 
+    'BMI', 
+    'DiabetesPedigreeFunction', 
+    'Age'
+]
+
+@app.route("/predict", methods=["POST"])
 def predict():
+    # Check JSON
     if not request.is_json:
         return jsonify({"error": "Request must be JSON"}), 400
 
     data = request.get_json(force=True)
 
-    # Ensure data is in the correct format (list of lists or dict of lists for DataFrame)
+    # If you expect a single record like:
+    # {
+    #   "Pregnancies": 2,
+    #   "Glucose": 120,
+    #   ...
+    # }
     try:
-        # Convert the dictionary data to a DataFrame. This assumes data is a single record.
-        # If 'data' can contain multiple records, it should be a list of dictionaries.
         input_df = pd.DataFrame([data])
-    except ValueError as e:
+    except Exception as e:
         return jsonify({"error": f"Invalid input data format: {e}"}), 400
 
-    # Ensure the column order matches the training data features (X)
-    # Assuming 'X' (or X.columns) from earlier preprocessing is still available or can be recreated.
-    # For this example, let's assume the columns used in 'X' are known.
-    # Replace with actual feature names if X is not globally available.
-    feature_columns = ['Pregnancies', 'Glucose', 'BloodPressure', 'SkinThickness', 'Insulin', 'BMI', 'DiabetesPedigreeFunction', 'Age']
+    # Check if all required columns present
+    missing_cols = [col for col in FEATURE_COLUMNS if col not in input_df.columns]
+    if missing_cols:
+        return jsonify({
+            "error": f"Missing features in input data: {', '.join(missing_cols)}"
+        }), 400
 
-    # Check if all required features are present
-    if not all(col in input_df.columns for col in feature_columns):
-        missing_cols = [col for col in feature_columns if col not in input_df.columns]
-        return jsonify({"error": f"Missing features in input data: {', '.join(missing_cols)}"}), 400
-    
-    input_df = input_df[feature_columns]
+    # Reorder columns
+    input_df = input_df[FEATURE_COLUMNS]
 
-    # Preprocess the input data using the loaded scaler
+    # Scale input
     scaled_data = scaler.transform(input_df)
 
-    # Make a prediction using the loaded model
+    # Predict
     prediction = model.predict(scaled_data)
 
-    # Return the prediction as a JSON response
+    # Convert numpy type to Python int for JSON serialization
     return jsonify({"prediction": int(prediction[0])})
 
-print("Flask /predict endpoint defined.")
-
-if__name__ = __main__:
-app.run(debug=TRUE)
+if __name__ == "__main__":
+    # For local testing
+    # For cloud deployment (Render/Railway/etc.), they often set PORT in env
+    port = int(os.environ.get("PORT", 5000))
+    app.run(host="0.0.0.0", port=port, debug=True)
